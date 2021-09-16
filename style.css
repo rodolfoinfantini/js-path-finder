@@ -1,0 +1,38 @@
+table *{
+    border: 1px solid #000;
+    width: 18px;
+    height: 18px;
+}
+
+table{
+    border-collapse: collapse;
+    border-spacing: 0;
+}
+
+
+
+.green{
+    background-color: limegreen;
+}
+
+.red{
+    background-color: red;
+}
+
+
+
+
+
+
+
+.path{
+    background-color: hsl(180, 100%, 40%);
+}
+
+.black{
+    background-color: black;
+}
+
+.blue{
+    background-color: cyan;
+}
