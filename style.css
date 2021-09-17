@@ -4,6 +4,10 @@ table *{
     height: 18px;
 }
 
+table, table *{
+    user-select: none;
+}
+
 table{
     border-collapse: collapse;
     border-spacing: 0;

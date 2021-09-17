@@ -3,6 +3,12 @@ let cells = document.querySelectorAll('td')
 const button = document.querySelector('button.start')
 const clear = document.querySelector('button.clear')
 const inputDelay = document.querySelector(`input[name="delay"]`)
+const loadBtn = document.querySelector('button.load')
+const loadInput = document.querySelector(`input[name="load"]`)
+const exportBtn = document.querySelector('button.export')
+const exportInput = document.querySelector(`textarea[name="export"]`)
+const copyBtn = document.querySelector('button.copy')
+
 
 const grid = {width: 45, height: 40}
 
@@ -21,7 +27,7 @@ inputDelay.oninput = () => {
 clear.onclick = () => {
     obstaculos = []
     localStorage.setItem('obstaculos',null)
-    updateColors()
+    updateColorsObstaculosAll()
 }
 
 const start = {x: 1, y: grid.height - 2, g: 0, h: undefined, f: undefined}
@@ -55,6 +61,18 @@ for(let i = 0; i < grid.height; i++) {
     }
 }
 
+let isCliking = false
+
+table.addEventListener('mousedown', () => {
+    isCliking = true
+})
+table.addEventListener('mouseup', () => {
+    isCliking = false
+})
+table.addEventListener('mouseleave', () => {
+    isCliking = false
+})
+
 function generateGrid() {
     let newHtml = ''
     for(let i = 0; i < grid.height; i++) {
@@ -69,8 +87,7 @@ function generateGrid() {
     document.querySelector(`.x${start.x}.y${start.y}`).classList.add('blue')
     document.querySelector(`.x${end.x}.y${end.y}`).classList.add('blue')
     cells.forEach(e => {
-        e.onclick = () => {
-            
+        e.addEventListener('mousedown',() => {
             const cellClass = e.classList
             if(!contains(obstaculos,{x: cellClass[0].replace('x',''), y: cellClass[1].replace('y','')})){
                 obstaculos.push({x: cellClass[0].replace('x',''), y: cellClass[1].replace('y','')})
@@ -78,9 +95,21 @@ function generateGrid() {
             else{
                 obstaculos.splice(findByXY(obstaculos,{x: cellClass[0].replace('x',''), y: cellClass[1].replace('y','')}),1)
             }
-            updateColorsObstaculos(obstaculos[obstaculos.length - 1])
+            updateColorsObstaculosAll()
             localStorage.setItem('obstaculos',JSON.stringify(obstaculos))
-        }
+        }) 
+        e.addEventListener('mouseover', () => {
+            if(!isCliking) return
+            const cellClass = e.classList
+            if(!contains(obstaculos,{x: cellClass[0].replace('x',''), y: cellClass[1].replace('y','')})){
+                obstaculos.push({x: cellClass[0].replace('x',''), y: cellClass[1].replace('y','')})
+            }
+            else{
+                obstaculos.splice(findByXY(obstaculos,{x: cellClass[0].replace('x',''), y: cellClass[1].replace('y','')}),1)
+            }
+            updateColorsObstaculosAll()
+            localStorage.setItem('obstaculos',JSON.stringify(obstaculos))
+        })
     })
 }
 
@@ -182,6 +211,11 @@ function updateColorsClosed(el){
 function updateColorsObstaculos(el){
     document.querySelector(`.x${el.x}.y${el.y}`).classList.add('black')
 }
+function updateColorsObstaculosAll(){
+    const black = document.querySelectorAll('.black')
+    for(let i = 0; i < black.length; i++) black[i].classList.remove('black')
+    for(let i = 0; i < obstaculos.length; i++) document.querySelector(`.x${obstaculos[i].x}.y${obstaculos[i].y}`).classList.add('black')
+}
 
 function updateColors(){
     const green = document.querySelectorAll('.green'), red = document.querySelectorAll('.red'), black = document.querySelectorAll('.black')
@@ -256,19 +290,23 @@ function getNeighbours(arr){
     if(arr.x + 1 < grid.width){
         neighbor.push({x: arr.x + 1, y: arr.y, g: undefined, h: undefined, f: undefined})
         if(arr.y + 1 < grid.height){
-            neighbor.push({x: arr.x + 1, y: arr.y + 1, g: undefined, h: undefined, f: undefined})
+            if((!contains(obstaculos,{x: arr.x + 1, y: arr.y}) || !contains(obstaculos,{x: arr.x, y: arr.y + 1})) || arr.y + 1 >= grid.height || arr.x + 1 >= grid.width)
+                neighbor.push({x: arr.x + 1, y: arr.y + 1, g: undefined, h: undefined, f: undefined})
         }
         if(arr.y - 1 >= 0){
-            neighbor.push({x: arr.x + 1, y: arr.y - 1, g: undefined, h: undefined, f: undefined})
+            if((!contains(obstaculos,{x: arr.x + 1, y: arr.y}) || !contains(obstaculos,{x: arr.x, y: arr.y - 1})) || arr.y - 1 <= 0 || arr.x + 1 >= grid.width)
+                neighbor.push({x: arr.x + 1, y: arr.y - 1, g: undefined, h: undefined, f: undefined})
         }
     }
     if(arr.x - 1 >= 0){
         neighbor.push({x: arr.x - 1, y: arr.y, g: undefined, h: undefined, f: undefined})
         if(arr.y + 1 < grid.height){
-            neighbor.push({x: arr.x - 1, y: arr.y + 1, g: undefined, h: undefined, f: undefined})
+            if((!contains(obstaculos,{x: arr.x - 1, y: arr.y}) || !contains(obstaculos,{x: arr.x, y: arr.y + 1})) || arr.y + 1 >= grid.height || arr.x - 1 <= 0)
+                neighbor.push({x: arr.x - 1, y: arr.y + 1, g: undefined, h: undefined, f: undefined})
         }
         if(arr.y - 1 >= 0){
-            neighbor.push({x: arr.x - 1, y: arr.y - 1, g: undefined, h: undefined, f: undefined})
+            if((!contains(obstaculos,{x: arr.x - 1, y: arr.y}) || !contains(obstaculos,{x: arr.x, y: arr.y - 1})) || arr.y - 1 <= 0 || arr.x - 1 <= 0)
+                neighbor.push({x: arr.x - 1, y: arr.y - 1, g: undefined, h: undefined, f: undefined})
         }
     }
     if(arr.y + 1 < grid.height){
@@ -280,5 +318,35 @@ function getNeighbours(arr){
     return neighbor
 }
 
+loadBtn.onclick = e => {
+    e.preventDefault()
+    try{
+        let str = loadInput.value
+        obstaculos = JSON.parse(str)
+        updateColorsObstaculosAll()
+        localStorage.setItem('obstaculos',JSON.stringify(obstaculos))
+    }catch(e){
+        let str = loadInput.value
+        obstaculos = JSON.parse(JSON.parse(str))
+        updateColorsObstaculosAll()
+        localStorage.setItem('obstaculos',JSON.stringify(obstaculos))
+    }
+}
+
+exportBtn.onclick = e => {
+    e.preventDefault()
+    try{
+        exportInput.value = JSON.stringify(obstaculos)
+    }
+    catch(e){
+        console.error(e)
+    }
+}
+
+copyBtn.onclick = e => {
+    e.preventDefault()
+    // exportInput.value.select()
+    navigator.clipboard.writeText(exportInput.value)
+}
 
 button.onclick = startLoop
