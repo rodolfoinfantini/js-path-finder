@@ -8,7 +8,7 @@ const grid = {width: 45, height: 40}
 
 const nodes = []
 
-let delay = 100
+let delay = 10
 
 inputDelay.value = delay
 
@@ -78,7 +78,7 @@ function generateGrid() {
             else{
                 obstaculos.splice(findByXY(obstaculos,{x: cellClass[0].replace('x',''), y: cellClass[1].replace('y','')}),1)
             }
-            updateColors()
+            updateColorsObstaculos(obstaculos[obstaculos.length - 1])
             localStorage.setItem('obstaculos',JSON.stringify(obstaculos))
         }
     })
@@ -89,58 +89,81 @@ generateGrid()
 let current = start
 
 function startLoop(){
+    open = []
+    closed = []
+    closestPath = []
+    open.push(start)
     updateColors()
     cells.forEach(e => {
         e.classList.remove('path')
     })
-    let timer = setInterval(function(){
-        if(open.length <= 0){
-            return
-        }
-        current = getLowestF(open)
-        open.splice(open.indexOf(current), 1)
-        closed.push(current)
-        if(current.x == end.x && current.y == end.y){
-            console.log('path found')
-            cells.forEach(e => {
-                e.classList.remove('path')
-            })
-            clearInterval(timer)
-            for(let i = closed.length - 1; i >= 0; i--){
-                if(closed[i].x == start.x && closed[i].y == start.y) break
-                closestPath.push(closed[i].parent)
-                i = findIndexByParent(closed,closed[i].parent) + 1
-            }
-            updateColors()
-            cells = document.querySelectorAll('td')
-            cells.forEach(e => {
-                e.classList.remove('green')
-                e.classList.remove('red')
-            })
-            open = []
-            closed = []
-            closestPath = []
-            open.push(start)
-            return
-        }
-        getNeighbours(current).forEach(e => {
-            if(contains(obstaculos,e) || contains(closed,e)){
+    let loop = true
+    if(delay == 0){
+        while(loop){
+            current = getLowestF(open)
+            open.splice(open.indexOf(current), 1)
+            closed.push(current)
+            // updateColorsClosed(current)
+            if(current.x == end.x && current.y == end.y){
+                // clearInterval(timer)
+                for(let i = closed.length - 1; i >= 0; i--){
+                    if(closed[i].x == start.x && closed[i].y == start.y) break
+                    closestPath.push(closed[i].parent)
+                    i = findIndexByParent(closed,closed[i].parent) + 1
+                }
+                updateColors()
+                cells.forEach(e => {
+                    e.classList.remove('green')
+                    e.classList.remove('red')
+                })
+                loop = false
                 return
             }
-            if(path.length <= 0){
-                path.push(e)
-            }
-            if(!contains(open,e) || path[path.length - 1].g < e.g){
-                e.g = getDistance(e,start)
-                e.h = getDistance(e,end)
-                e.f = e.g + e.h
-                e.parent = current
-                if(!contains(open,e)) open.push(e)
-                path.push(e)
+            getNeighbours(current).forEach(e => {
+                if(!(contains(obstaculos,e) || contains(closed,e)) && (!contains(open,e) || path[path.length - 1].g < e.g)){
+                    e.g = getDistance(e,start)
+                    e.h = getDistance(e,end)
+                    e.f = e.g + e.h
+                    e.parent = current
+                    if(!contains(open,e)) open.push(e)
+                    path.push(e)
+                    // updateColorsOpen(e)
+                }
+            })
+        }
+    }else{
+        let timer = setInterval(function(){
+            current = getLowestF(open)
+            open.splice(open.indexOf(current), 1)
+            closed.push(current)
+            updateColorsClosed(current)
+            if(current.x == end.x && current.y == end.y){
+                clearInterval(timer)
+                for(let i = closed.length - 1; i >= 0; i--){
+                    if(closed[i].x == start.x && closed[i].y == start.y) break
+                    closestPath.push(closed[i].parent)
+                    i = findIndexByParent(closed,closed[i].parent) + 1
+                }
                 updateColors()
+                cells.forEach(e => {
+                    e.classList.remove('green')
+                    e.classList.remove('red')
+                })
+                return
             }
-        })
-    },delay)
+            getNeighbours(current).forEach(e => {
+                if(!(contains(obstaculos,e) || contains(closed,e)) && (!contains(open,e) || path[path.length - 1].g < e.g)){
+                    e.g = getDistance(e,start)
+                    e.h = getDistance(e,end)
+                    e.f = e.g + e.h
+                    e.parent = current
+                    if(!contains(open,e)) open.push(e)
+                    path.push(e)
+                    updateColorsOpen(e)
+                }
+            })
+        },delay)
+    }
 }
 
 function findIndexByParent(arr,value){
@@ -149,44 +172,26 @@ function findIndexByParent(arr,value){
     }
 }
 
+function updateColorsOpen(el){
+    document.querySelector(`.x${el.x}.y${el.y}`).classList.add('green')
+}
+function updateColorsClosed(el){
+    document.querySelector(`.x${el.x}.y${el.y}`).classList.add('red')
+}
+
+function updateColorsObstaculos(el){
+    document.querySelector(`.x${el.x}.y${el.y}`).classList.add('black')
+}
 
 function updateColors(){
-    if(document.querySelectorAll('.green').length > 0) document.querySelectorAll('.green').forEach(e => {e.classList.remove('green')})
-    if(document.querySelectorAll('.red').length > 0) document.querySelectorAll('.red').forEach(e => {e.classList.remove('red')})
-    if(document.querySelectorAll('.path').length > 0) document.querySelectorAll('.path').forEach(e => {e.classList.remove('path')})
-    if(document.querySelectorAll('.black').length > 0) document.querySelectorAll('.black').forEach(e => {e.classList.remove('black')})
-    
-    if(open.length > 0){
-        open.forEach(e => {
-            document.querySelector(`.x${e.x}.y${e.y}`).classList.add('green')
-            // document.querySelector(`.x${e.x}.y${e.y}`).innerText = `g:${e.g} h:${e.h} f: ${e.f}`
-        })
-    }
-    
-    if(closed.length > 0){
-        closed.forEach(e => {
-            document.querySelector(`.x${e.x}.y${e.y}`).classList.add('red')
-            // document.querySelector(`.x${e.x}.y${e.y}`).innerText = `g:${e.g} h:${e.h} f: ${e.f}`
-        })
-    }
-
-    if(obstaculos.length > 0){
-        obstaculos.forEach(e => {
-            document.querySelector(`.x${e.x}.y${e.y}`).classList.add('black')
-        })
-    }
-
-    if(path.length > 0){
-        path.forEach(e => {
-            // document.querySelector(`.x${e.x}.y${e.y}`).classList.add('path')
-        })
-    }
-
-    if(closestPath.length > 0){
-        closestPath.forEach(e => {
-            document.querySelector(`.x${e.x}.y${e.y}`).classList.add('path')
-        })
-    }
+    const green = document.querySelectorAll('.green'), red = document.querySelectorAll('.red'), black = document.querySelectorAll('.black')
+    for(let i = 0; i < green.length; i++) green[i].classList.remove('green')
+    for(let i = 0; i < red.length; i++) red[i].classList.remove('red')
+    for(let i = 0; i < black.length; i++) black[i].classList.remove('black')
+    for(let i = 0; i < open.length; i++) document.querySelector(`.x${open[i].x}.y${open[i].y}`).classList.add('green')
+    for(let i = 0; i < closed.length; i++) document.querySelector(`.x${closed[i].x}.y${closed[i].y}`).classList.add('red')
+    for(let i = 0; i < obstaculos.length; i++) document.querySelector(`.x${obstaculos[i].x}.y${obstaculos[i].y}`).classList.add('black')
+    for(let i = 0; i < closestPath.length; i++) document.querySelector(`.x${closestPath[i].x}.y${closestPath[i].y}`).classList.add('path')
 }
 
 updateColors()
