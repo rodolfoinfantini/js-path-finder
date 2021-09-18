@@ -9,18 +9,85 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+        <fieldset class="settings parent">
+            <legend>Settings</legend>
+            <fieldset>
+                <legend>Grid size</legend>
+                <form>
+                    <label for="width">Width</label>
+                    <input type="range" name="width" min="3" max="200">
+                    <label for="width" class="value">50</label>
+                    <br>
+                    <label for="height">Height</label>
+                    <input type="range" name="height" min="3" max="200">
+                    <label for="height" class="value">50</label>
+                </form>
+            </fieldset>
+            <fieldset>
+                <legend>Delay</legend>
+                <input name="delay" type="text" value="100">
+            </fieldset>
+            <fieldset>
+                <legend>Setup</legend>
+                <input type="radio" name="setup" class="start" checked>
+                <label for="setup">Starting point</label>
+                <br>
+                <input type="radio" name="setup" class="end">
+                <label for="setup">Ending point</label>
+                <br>
+                <input type="radio" name="setup" class="obs">
+                <label for="setup">Obstacles</label>
+                <br>
+            </fieldset>
+        </fieldset>
+        
     <table></table>
-    <button class="start">Start</button>
-    <form>
-        <label for="delay">Delay</label>
-        <input name="delay" type="text" value="100">
-        <label for="load">Load Obstacles</label>
-        <input name="load" type="text" value="">
-        <button class="load">Load</button>
-        <textarea name="export" cols="30" rows="1" readonly></textarea>
-        <button class="export">Export</button>
-        <button class="copy">Copy</button>
-    </form>
-    <button class="clear">Clear obstacles</button>
+    <button class="control start">Start</button>
+    <button class="control clear">Clear obstacles</button>
+        <fieldset class="load parent">
+            <legend>Load</legend>
+            <fieldset>
+                <legend>Obstacles</legend>
+                <form>
+                    <input name="loadobs" type="text" value="">
+                </form>
+                <button class="load obs">Load</button>
+            </fieldset>
+            <fieldset>
+                <legend>Grid Size</legend>
+                <form>
+                    <input name="loadgrid" type="text" value="">
+                </form>
+                <button class="load grid">Load</button>
+            </fieldset>
+            <fieldset>
+                <legend>Start and End</legend>
+                <form>
+                    <input name="loadstart" type="text" value="">
+                </form>
+                <button class="load start">Load</button>
+            </fieldset>
+        </fieldset>
+        <fieldset class="export parent">
+            <legend>Export</legend>
+            <fieldset>
+                <legend>Obstacles</legend>
+                <button class="export obs">Export</button><br>
+                <textarea name="exportobs" cols="30" rows="1" readonly></textarea><br>
+                <button class="copy obs">Copy</button>
+            </fieldset>
+            <fieldset>
+                <legend>Grid Size</legend>
+                <button class="export grid">Export</button><br>
+                <textarea name="exportgrid" cols="30" rows="1" readonly></textarea><br>
+                <button class="copy grid">Copy</button>
+            </fieldset>
+            <fieldset>
+                <legend>Start and End</legend>
+                <button class="export start">Export</button><br>
+                <textarea name="exportstart" cols="30" rows="1" readonly></textarea><br>
+                <button class="copy start">Copy</button>
+            </fieldset>
+        </fieldset>
 </body>
 </html>

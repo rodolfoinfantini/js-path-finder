@@ -3,20 +3,116 @@ let cells = document.querySelectorAll('td')
 const button = document.querySelector('button.start')
 const clear = document.querySelector('button.clear')
 const inputDelay = document.querySelector(`input[name="delay"]`)
-const loadBtn = document.querySelector('button.load')
-const loadInput = document.querySelector(`input[name="load"]`)
-const exportBtn = document.querySelector('button.export')
-const exportInput = document.querySelector(`textarea[name="export"]`)
-const copyBtn = document.querySelector('button.copy')
+
+const loadBtn = document.querySelector('button.load.obs')
+const loadInput = document.querySelector(`input[name="loadobs"]`)
+
+const loadGridBtn = document.querySelector('button.load.grid')
+const loadGridInput = document.querySelector(`input[name="loadgrid"]`)
+
+const loadStartBtn = document.querySelector('button.load.start')
+const loadStartInput = document.querySelector(`input[name="loadstart"]`)
+
+const exportBtn = document.querySelector('button.export.obs')
+const exportInput = document.querySelector(`textarea[name="exportobs"]`)
+const copyBtn = document.querySelector('button.copy.obs')
+
+const exportGridBtn = document.querySelector('button.export.grid')
+const exportGridInput = document.querySelector(`textarea[name="exportgrid"]`)
+const copyGridBtn = document.querySelector('button.copy.grid')
+
+const exportStartBtn = document.querySelector('button.export.start')
+const exportStartInput = document.querySelector(`textarea[name="exportstart"]`)
+const copyStartBtn = document.querySelector('button.copy.start')
+
+const widthInput = document.querySelector('input[name="width"]')
+const widthLabel = document.querySelector('label[for="width"].value')
+const heightInput = document.querySelector('input[name="height"]')
+const heightLabel = document.querySelector('label[for="height"].value')
+const setupInput = document.querySelectorAll('input[name="setup"]')
 
 
-const grid = {width: 45, height: 40}
+const grid = JSON.parse(localStorage.getItem('grid')) || {width: 30, height: 20}
 
 const nodes = []
 
 let delay = 10
 
 inputDelay.value = delay
+
+let setup = 'start'
+
+setupInput.forEach(e => {
+    e.onchange = () => {
+        if(e.checked) {
+            setup = e.className
+        }
+    }
+})
+
+
+function updateWidthHeight(value) {
+    grid.width = value.width
+    grid.height = value.height
+    if(start.x >= grid.width){
+        updateStart({x: grid.width - 1, y: start.y})
+    }
+    if(start.y >= grid.height){
+        updateStart({x: start.x, y: grid.height - 1})
+    }
+    if(end.y >= grid.height){
+        updateEnd({x: end.x, y: grid.height - 1})
+    }
+    if(end.x >= grid.width){
+        updateEnd({x: grid.width - 1, y: end.y})
+    }
+    generateGrid()
+    updateColorsObstaculosAll()
+    widthInput.value = grid.width
+    heightInput.value = grid.height
+    widthLabel.innerText = grid.width
+    heightLabel.innerText = grid.height
+}
+
+function updateStart(pos){
+    start.x = pos.x
+    start.y = pos.y
+    start.h = getDistance(start,end)
+    start.f = start.g + start.h
+    end.g = getDistance(end,start)
+    end.f = end.g + end.h
+    open = []
+    open.push(start)
+    generateGrid()
+    updateColorsObstaculosAll()
+    localStorage.setItem('start',JSON.stringify(start))
+}
+
+function updateEnd(pos){
+    end.x = pos.x
+    end.y = pos.y
+    start.h = getDistance(start,end)
+    start.f = start.g + start.h
+    end.g = getDistance(end,start)
+    end.f = end.g + end.h
+    open = []
+    open.push(start)
+    generateGrid()
+    updateColorsObstaculosAll()
+    localStorage.setItem('end',JSON.stringify(end))
+}
+
+
+
+
+widthInput.oninput = () => {
+    updateWidthHeight({width: widthInput.value, height: heightInput.value})
+    localStorage.setItem('grid',JSON.stringify(grid))
+}
+heightInput.oninput = () => {
+    updateWidthHeight({width: widthInput.value, height: heightInput.value})
+    localStorage.setItem('grid',JSON.stringify(grid))
+}
 
 inputDelay.oninput = () => {
     if(!isNaN(parseInt(inputDelay.value))){
@@ -30,8 +126,8 @@ clear.onclick = () => {
     updateColorsObstaculosAll()
 }
 
-const start = {x: 1, y: grid.height - 2, g: 0, h: undefined, f: undefined}
-const end = {x: grid.width - 3, y: 1, g: undefined, h: 0, f: undefined}
+const start = JSON.parse(localStorage.getItem('start')) || {x: 1, y: grid.height - 2, g: 0, h: undefined, f: undefined}
+const end = JSON.parse(localStorage.getItem('end')) || {x: grid.width - 2, y: 1, g: undefined, h: 0, f: undefined}
 let obstaculos = JSON.parse(localStorage.getItem('obstaculos')) || []
 const path = []
 
@@ -84,21 +180,34 @@ function generateGrid() {
     }
     table.innerHTML = newHtml
     cells = document.querySelectorAll('td')
-    document.querySelector(`.x${start.x}.y${start.y}`).classList.add('blue')
-    document.querySelector(`.x${end.x}.y${end.y}`).classList.add('blue')
+    try{
+        document.querySelector(`.x${start.x}.y${start.y}`).classList.add('cyan')
+        document.querySelector(`.x${end.x}.y${end.y}`).classList.add('blue')
+    }catch(e){
+
+    }
+    
     cells.forEach(e => {
         e.addEventListener('mousedown',() => {
             const cellClass = e.classList
-            if(!contains(obstaculos,{x: cellClass[0].replace('x',''), y: cellClass[1].replace('y','')})){
-                obstaculos.push({x: cellClass[0].replace('x',''), y: cellClass[1].replace('y','')})
+            if(setup == 'obs'){
+                if(!contains(obstaculos,{x: cellClass[0].replace('x',''), y: cellClass[1].replace('y','')})){
+                    obstaculos.push({x: cellClass[0].replace('x',''), y: cellClass[1].replace('y','')})
+                }
+                else{
+                    obstaculos.splice(findByXY(obstaculos,{x: cellClass[0].replace('x',''), y: cellClass[1].replace('y','')}),1)
+                }
+                updateColorsObstaculosAll()
+                localStorage.setItem('obstaculos',JSON.stringify(obstaculos))
             }
-            else{
-                obstaculos.splice(findByXY(obstaculos,{x: cellClass[0].replace('x',''), y: cellClass[1].replace('y','')}),1)
+            else if(setup == 'start'){
+                updateStart({x: parseInt(cellClass[0].replace('x','')), y: parseInt(cellClass[1].replace('y',''))})
+            }else if(setup == 'end'){
+                updateEnd({x: parseInt(cellClass[0].replace('x','')), y: parseInt(cellClass[1].replace('y',''))})
             }
-            updateColorsObstaculosAll()
-            localStorage.setItem('obstaculos',JSON.stringify(obstaculos))
         }) 
         e.addEventListener('mouseover', () => {
+            if(setup != 'obs') return
             if(!isCliking) return
             const cellClass = e.classList
             if(!contains(obstaculos,{x: cellClass[0].replace('x',''), y: cellClass[1].replace('y','')})){
@@ -113,7 +222,12 @@ function generateGrid() {
     })
 }
 
-generateGrid()
+
+
+updateWidthHeight(grid)
+
+
+
 
 let current = start
 
@@ -202,30 +316,96 @@ function findIndexByParent(arr,value){
 }
 
 function updateColorsOpen(el){
-    document.querySelector(`.x${el.x}.y${el.y}`).classList.add('green')
+    try {
+        document.querySelector(`.x${el.x}.y${el.y}`).classList.add('green')
+    } catch (error) {
+        
+    }
 }
 function updateColorsClosed(el){
-    document.querySelector(`.x${el.x}.y${el.y}`).classList.add('red')
+    try {
+        document.querySelector(`.x${el.x}.y${el.y}`).classList.add('red')
+    } catch (error) {
+        
+    }
 }
 
 function updateColorsObstaculos(el){
-    document.querySelector(`.x${el.x}.y${el.y}`).classList.add('black')
+    try{
+        document.querySelector(`.x${el.x}.y${el.y}`).classList.add('black')
+    }catch (error) {
+
+    }
 }
 function updateColorsObstaculosAll(){
     const black = document.querySelectorAll('.black')
-    for(let i = 0; i < black.length; i++) black[i].classList.remove('black')
-    for(let i = 0; i < obstaculos.length; i++) document.querySelector(`.x${obstaculos[i].x}.y${obstaculos[i].y}`).classList.add('black')
+    for(let i = 0; i < black.length; i++) {
+        try{
+            black[i].classList.remove('black')
+        }catch(e){
+
+        }
+    }
+    for(let i = 0; i < obstaculos.length; i++) {
+        try {
+            document.querySelector(`.x${obstaculos[i].x}.y${obstaculos[i].y}`).classList.add('black')
+        } catch (error) {
+            
+        }
+    } 
 }
 
 function updateColors(){
     const green = document.querySelectorAll('.green'), red = document.querySelectorAll('.red'), black = document.querySelectorAll('.black')
-    for(let i = 0; i < green.length; i++) green[i].classList.remove('green')
-    for(let i = 0; i < red.length; i++) red[i].classList.remove('red')
-    for(let i = 0; i < black.length; i++) black[i].classList.remove('black')
-    for(let i = 0; i < open.length; i++) document.querySelector(`.x${open[i].x}.y${open[i].y}`).classList.add('green')
-    for(let i = 0; i < closed.length; i++) document.querySelector(`.x${closed[i].x}.y${closed[i].y}`).classList.add('red')
-    for(let i = 0; i < obstaculos.length; i++) document.querySelector(`.x${obstaculos[i].x}.y${obstaculos[i].y}`).classList.add('black')
-    for(let i = 0; i < closestPath.length; i++) document.querySelector(`.x${closestPath[i].x}.y${closestPath[i].y}`).classList.add('path')
+    for(let i = 0; i < green.length; i++) {
+        try {
+            green[i].classList.remove('green')
+        } catch (error) {
+            
+        }
+    }
+    for(let i = 0; i < red.length; i++) {
+        try {
+            red[i].classList.remove('red')
+        } catch (error) {
+            
+        }
+    }
+    for(let i = 0; i < black.length; i++) {
+        try {
+            black[i].classList.remove('black')
+        } catch (e) {
+            
+        }
+    }
+    for(let i = 0; i < open.length; i++) {
+        try{
+            document.querySelector(`.x${open[i].x}.y${open[i].y}`).classList.add('green')
+        }catch(e){
+
+        }
+    } 
+    for(let i = 0; i < closed.length; i++) {
+        try {
+            document.querySelector(`.x${closed[i].x}.y${closed[i].y}`).classList.add('red')
+        }catch(e){
+
+        }
+    }
+    for(let i = 0; i < obstaculos.length; i++) {
+        try{
+            document.querySelector(`.x${obstaculos[i].x}.y${obstaculos[i].y}`).classList.add('black')
+        }catch(e){
+
+        }
+    }
+    for(let i = 0; i < closestPath.length; i++){
+        try{
+            document.querySelector(`.x${closestPath[i].x}.y${closestPath[i].y}`).classList.add('path')
+        }catch(e){
+
+        }
+    } 
 }
 
 updateColors()
@@ -321,15 +501,62 @@ function getNeighbours(arr){
 loadBtn.onclick = e => {
     e.preventDefault()
     try{
-        let str = loadInput.value
-        obstaculos = JSON.parse(str)
-        updateColorsObstaculosAll()
-        localStorage.setItem('obstaculos',JSON.stringify(obstaculos))
+        try{
+            let str = loadInput.value
+            obstaculos = JSON.parse(str)
+            updateColorsObstaculosAll()
+            localStorage.setItem('obstaculos',JSON.stringify(obstaculos))
+        }catch(e){
+            let str = loadInput.value
+            obstaculos = JSON.parse(JSON.parse(str))
+            updateColorsObstaculosAll()
+            localStorage.setItem('obstaculos',JSON.stringify(obstaculos))
+        }
     }catch(e){
-        let str = loadInput.value
-        obstaculos = JSON.parse(JSON.parse(str))
-        updateColorsObstaculosAll()
-        localStorage.setItem('obstaculos',JSON.stringify(obstaculos))
+        alert('invalid input')
+        loadInput.value = ''
+    }
+}
+loadGridBtn.onclick = e => {
+    e.preventDefault()
+    try{
+        try{
+            let str = loadGridInput.value
+            updateWidthHeight(JSON.parse(str))
+            localStorage.setItem('grid',JSON.stringify(grid))
+        }catch(e){
+            let str = loadGridInput.value
+            updateWidthHeight(JSON.parse(JSON.parse(str)))
+            localStorage.setItem('grid',JSON.stringify(grid))
+        }
+    }catch(e){
+        alert('invalid input')
+        loadGridInput.value = ''
+    }
+}
+loadStartBtn.onclick = e => {
+    e.preventDefault()
+    try{
+        try{
+            let str = loadStartInput.value
+            const start = JSON.parse(str).start
+            const end = JSON.parse(str).end
+            updateStart(start)
+            updateEnd(end)
+            localStorage.setItem('start',JSON.stringify(start))
+            localStorage.setItem('end',JSON.stringify(end))
+        }catch(e){
+            let str = loadStartInput.value
+            const start = JSON.parse(JSON.parse(str)).start
+            const end = JSON.parse(JSON.parse(str)).end
+            updateStart(start)
+            updateEnd(end)
+            localStorage.setItem('start',JSON.stringify(start))
+            localStorage.setItem('end',JSON.stringify(end))
+        }
+    }catch(e){
+        alert('invalid input')
+        loadStartInput.value = ''
     }
 }
 
@@ -342,11 +569,37 @@ exportBtn.onclick = e => {
         console.error(e)
     }
 }
-
 copyBtn.onclick = e => {
     e.preventDefault()
-    // exportInput.value.select()
     navigator.clipboard.writeText(exportInput.value)
+}
+
+exportGridBtn.onclick = e => {
+    e.preventDefault()
+    try{
+        exportGridInput.value = JSON.stringify(grid)
+    }
+    catch(e){
+        console.error(e)
+    }
+}
+copyGridBtn.onclick = e => {
+    e.preventDefault()
+    navigator.clipboard.writeText(exportGridInput.value)
+}
+
+exportStartBtn.onclick = e => {
+    e.preventDefault()
+    try{
+        exportStartInput.value = JSON.stringify({start: start, end: end})
+    }
+    catch(e){
+        console.error(e)
+    }
+}
+copyStartBtn.onclick = e => {
+    e.preventDefault()
+    navigator.clipboard.writeText(exportStartInput.value)
 }
 
 button.onclick = startLoop
