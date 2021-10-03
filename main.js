@@ -399,13 +399,19 @@ function updateColors(){
 
         }
     }
-    for(let i = 0; i < closestPath.length; i++){
-        try{
-            document.querySelector(`.x${closestPath[i].x}.y${closestPath[i].y}`).classList.add('path')
-        }catch(e){
-
+    if(closestPath.length > 0){
+        let i = 0
+        function loop(){
+            try{
+                document.querySelector(`.x${closestPath[i].x}.y${closestPath[i].y}`).classList.add('path')
+            }catch(e){
+    
+            }
+            i++
+            if(i < closestPath.length) setTimeout(loop,0)
         }
-    } 
+        loop()
+    }
 }
 
 updateColors()

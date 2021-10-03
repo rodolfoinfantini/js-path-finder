@@ -1,3 +1,9 @@
+:root{
+    --anim-duration: 0.3s;
+    --init-scale: 0.5;
+    --delay: 0s;
+}
+
 body{
     display: flex;
     flex-direction: column;
@@ -5,9 +11,15 @@ body{
 }
 
 table *{
+    position: relative;
     border: 1px solid #000;
+    background-clip: padding-box;
     width: 18px;
     height: 18px;
+}
+
+td{
+    z-index: -1;
 }
 
 table, table *{
@@ -19,35 +31,69 @@ table{
     border-spacing: 0;
 }
 
+td::after{
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    transform: scale(1);
+    transform-origin: center;
+    width: 100%;
+    height: 100%;
+}
 
+@keyframes td {
+    0%{transform: scale(var(--init-scale));}
+    100%{transform: scale(1);}
+}
+@keyframes td2 {
+    0%{transform: scale(var(--init-scale));}
+    100%{transform: scale(1);}
+}
+@keyframes td3 {
+    0%{transform: scale(var(--init-scale));}
+    100%{transform: scale(1);}
+}
+@keyframes td4 {
+    0%{transform: scale(var(--init-scale));}
+    100%{transform: scale(1);}
+}
+@keyframes td5 {
+    0%{transform: scale(var(--init-scale));}
+    100%{transform: scale(1);}
+}
+@keyframes td6 {
+    0%{transform: scale(var(--init-scale));}
+    100%{transform: scale(1);}
+}
 
-.green{
+.green::after{
+    animation: td var(--anim-duration) ease-in;
     background-color: limegreen;
 }
 
-.red{
+.red::after{
+    animation: td2 var(--anim-duration) ease-in;
     background-color: red;
 }
 
-
-
-
-
-
-
-.path{
+.path::after{
+    animation: td3 var(--anim-duration) ease-in;
     background-color: hsl(180, 100%, 40%);
 }
 
-.black{
+.black::after{
+    animation: td4 var(--anim-duration) ease-in;
     background-color: black;
 }
 
-.blue{
+.blue::after{
+    animation: td5 var(--anim-duration) ease-in;
     background-color: blue;
 }
 
-.cyan{
+.cyan::after{
+    animation: td6 var(--anim-duration) ease-in;
     background-color: cyan;
 }
 
