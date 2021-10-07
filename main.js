@@ -384,20 +384,15 @@ function contains(arr,obj){
 }
 function findByXY(arr,obj){
     if(arr.length <= 0) return undefined
-    let have = false
-    let index = 0
+    let index = -1
     arr.every((e,i) => {
         if(e.x == obj.x && e.y == obj.y){
             index = i
-            have = true
             return false
         }
         return true
     })
-    if(have){
-        return index
-    }
-    return undefined
+    return index == -1 ? undefined : index
 }
 
 function getLowestF(arr){
@@ -417,10 +412,6 @@ function getLowestF(arr){
         return arr[lowHIndex]
     }
     return arr[lowFIndex]
-}
-
-function getLowestH(arr){
-
 }
 
 function getNeighbours(arr){
