@@ -40,7 +40,7 @@ let delay = 10
 
 inputDelay.value = delay
 
-let setup = 'start'
+let setup = 'obs'
 
 setupInput.forEach(e => {
     e.onchange = () => {
@@ -188,15 +188,19 @@ function generateGrid() {
     }
     
     cells.forEach(e => {
-        e.addEventListener('mousedown',() => {
+        e.addEventListener('mousedown',(ev) => {
             const cellClass = e.classList
             if(setup == 'obs'){
-                if(!contains(obstaculos,{x: cellClass[0].replace('x',''), y: cellClass[1].replace('y','')})){
+                if(!contains(obstaculos,{x: cellClass[0].replace('x',''), y: cellClass[1].replace('y','')}) && ev.which === 1){
                     obstaculos.push({x: cellClass[0].replace('x',''), y: cellClass[1].replace('y','')})
                 }
-                else{
-                    obstaculos.splice(findByXY(obstaculos,{x: cellClass[0].replace('x',''), y: cellClass[1].replace('y','')}),1)
-                }
+                else if(ev.which === 3){
+                    // obstaculos.splice(findByXY(obstaculos,{x: cellClass[0].replace('x',''), y: cellClass[1].replace('y','')}),1)
+                    const index = findByXY(obstaculos,{x: cellClass[0].replace('x',''), y: cellClass[1].replace('y','')})
+                    console.log(index)
+                    if(index != undefined)
+                        obstaculos.splice(index,1)
+                    }
                 updateColorsObstaculosAll()
                 localStorage.setItem('obstaculos',JSON.stringify(obstaculos))
             }
@@ -205,16 +209,18 @@ function generateGrid() {
             }else if(setup == 'end'){
                 updateEnd({x: parseInt(cellClass[0].replace('x','')), y: parseInt(cellClass[1].replace('y',''))})
             }
-        }) 
-        e.addEventListener('mouseover', () => {
+        })
+        e.addEventListener('mouseover', (ev) => {
             if(setup != 'obs') return
             if(!isCliking) return
             const cellClass = e.classList
-            if(!contains(obstaculos,{x: cellClass[0].replace('x',''), y: cellClass[1].replace('y','')})){
+            if(!contains(obstaculos,{x: cellClass[0].replace('x',''), y: cellClass[1].replace('y','')}) && ev.buttons != 2){
                 obstaculos.push({x: cellClass[0].replace('x',''), y: cellClass[1].replace('y','')})
             }
-            else{
-                obstaculos.splice(findByXY(obstaculos,{x: cellClass[0].replace('x',''), y: cellClass[1].replace('y','')}),1)
+            else if(ev.buttons == 2){
+                const index = findByXY(obstaculos,{x: cellClass[0].replace('x',''), y: cellClass[1].replace('y','')})
+                if(index != undefined)
+                    obstaculos.splice(index,1)
             }
             updateColorsObstaculosAll()
             localStorage.setItem('obstaculos',JSON.stringify(obstaculos))
@@ -231,7 +237,7 @@ updateWidthHeight(grid)
 
 let current = start
 
-function startLoop(){
+async function startLoop(){
     open = []
     closed = []
     closestPath = []
@@ -240,73 +246,37 @@ function startLoop(){
     cells.forEach(e => {
         e.classList.remove('path')
     })
-    let loop = true
-    if(delay == 0){
-        while(loop){
-            current = getLowestF(open)
-            open.splice(open.indexOf(current), 1)
-            closed.push(current)
-            // updateColorsClosed(current)
-            if(current.x == end.x && current.y == end.y){
-                // clearInterval(timer)
-                for(let i = closed.length - 1; i >= 0; i--){
-                    if(closed[i].x == start.x && closed[i].y == start.y) break
-                    closestPath.push(closed[i].parent)
-                    i = findIndexByParent(closed,closed[i].parent) + 1
-                }
-                updateColors()
-                cells.forEach(e => {
-                    e.classList.remove('green')
-                    e.classList.remove('red')
-                })
-                loop = false
-                return
+    while(!(current.x == end.x && current.y == end.y)){
+        current = getLowestF(open)
+        open.splice(open.indexOf(current), 1)
+        closed.push(current)
+        if(delay > 0) updateColorsClosed(current)
+        getNeighbours(current).forEach(e => {
+            if(!(contains(obstaculos,e) || contains(closed,e)) && (!contains(open,e) || path[path.length - 1].g < e.g)){
+                e.g = getDistance(e,start)
+                e.h = getDistance(e,end)
+                e.f = e.g + e.h
+                e.parent = current
+                if(!contains(open,e)) open.push(e)
+                path.push(e)
+                if(delay > 0) updateColorsOpen(e)
             }
-            getNeighbours(current).forEach(e => {
-                if(!(contains(obstaculos,e) || contains(closed,e)) && (!contains(open,e) || path[path.length - 1].g < e.g)){
-                    e.g = getDistance(e,start)
-                    e.h = getDistance(e,end)
-                    e.f = e.g + e.h
-                    e.parent = current
-                    if(!contains(open,e)) open.push(e)
-                    path.push(e)
-                    // updateColorsOpen(e)
-                }
-            })
-        }
-    }else{
-        let timer = setInterval(function(){
-            current = getLowestF(open)
-            open.splice(open.indexOf(current), 1)
-            closed.push(current)
-            updateColorsClosed(current)
-            if(current.x == end.x && current.y == end.y){
-                clearInterval(timer)
-                for(let i = closed.length - 1; i >= 0; i--){
-                    if(closed[i].x == start.x && closed[i].y == start.y) break
-                    closestPath.push(closed[i].parent)
-                    i = findIndexByParent(closed,closed[i].parent) + 1
-                }
-                updateColors()
-                cells.forEach(e => {
-                    e.classList.remove('green')
-                    e.classList.remove('red')
-                })
-                return
-            }
-            getNeighbours(current).forEach(e => {
-                if(!(contains(obstaculos,e) || contains(closed,e)) && (!contains(open,e) || path[path.length - 1].g < e.g)){
-                    e.g = getDistance(e,start)
-                    e.h = getDistance(e,end)
-                    e.f = e.g + e.h
-                    e.parent = current
-                    if(!contains(open,e)) open.push(e)
-                    path.push(e)
-                    updateColorsOpen(e)
-                }
-            })
-        },delay)
+        })
+        if(delay > 0) await sleep(delay)
     }
+    for(let i = closed.length - 1; i >= 0 && !(closed[i].x == start.x && closed[i].y == start.y); i--){
+        closestPath.push(closed[i].parent)
+        i = findIndexByParent(closed,closed[i].parent) + 1
+    }
+    updateColors()
+    cells.forEach(e => {
+        e.classList.remove('green')
+        e.classList.remove('red')
+    })
+}
+
+function sleep(delay){
+    return new Promise(resolve => setTimeout(resolve, delay))
 }
 
 function findIndexByParent(arr,value){
@@ -355,7 +325,7 @@ function updateColorsObstaculosAll(){
     } 
 }
 
-function updateColors(){
+async function updateColors(){
     const green = document.querySelectorAll('.green'), red = document.querySelectorAll('.red'), black = document.querySelectorAll('.black')
     for(let i = 0; i < green.length; i++) {
         try {
@@ -400,65 +370,47 @@ function updateColors(){
         }
     }
     if(closestPath.length > 0){
-        let i = 0
-        function loop(){
-            try{
-                document.querySelector(`.x${closestPath[i].x}.y${closestPath[i].y}`).classList.add('path')
-            }catch(e){
-    
-            }
-            i++
-            if(i < closestPath.length) setTimeout(loop,0)
+        for(let i = 0; i < closestPath.length; i++){
+            document.querySelector(`.x${closestPath[i].x}.y${closestPath[i].y}`).classList.add('path')
+            await sleep(0)
         }
-        loop()
     }
 }
 
 updateColors()
 
 function contains(arr,obj){
-    if(arr.length <= 0) return false
-    let contain = false
-    arr.forEach(e => {
-        if(e.x == obj.x && e.y == obj.y){
-            contain = true
-            return contain
-        }
-    })
-    return contain
+    return !!(arr.find(el => el.x == obj.x && el.y == obj.y))
 }
 function findByXY(arr,obj){
-    if(arr.length <= 0) return -1
+    if(arr.length <= 0) return undefined
+    let have = false
     let index = 0
-    arr.forEach((e,i) => {
+    arr.every((e,i) => {
         if(e.x == obj.x && e.y == obj.y){
             index = i
-            return index
+            have = true
+            return false
         }
+        return true
     })
-    return index
+    if(have){
+        return index
+    }
+    return undefined
 }
 
 function getLowestF(arr){
-    if(arr.length < 1) return undefined
-    let low = arr[0].f
     let lowFIndex = 0
     for(let i = 0; i < arr.length; i++){
-        if(arr[i].f < low){
-            low = arr[i].f
+        if(arr[i].f < arr[lowFIndex].f){
             lowFIndex = i
         }
     }
-    let equalIndex = []
-    for(let i = 0; i < arr.length; i++){
-        if(arr[i].f == low) equalIndex.push(i)
-    }
-    let lowH = arr[0].h
     let lowHIndex = 0
-    if(equalIndex.length > 1){
+    if(arr.filter(e => e.f == arr[lowFIndex].f).length > 1){
         for(let i = 0; i < arr.length; i++){
-            if(arr[i].h < lowH){
-                lowH = arr[i].h
+            if(arr[i].h < arr[lowHIndex].h){
                 lowHIndex = i
             }
         }
@@ -478,9 +430,9 @@ function getNeighbours(arr){
         if(arr.y + 1 < grid.height){
             if((!contains(obstaculos,{x: arr.x + 1, y: arr.y}) || !contains(obstaculos,{x: arr.x, y: arr.y + 1})) || arr.y + 1 >= grid.height || arr.x + 1 >= grid.width)
                 neighbor.push({x: arr.x + 1, y: arr.y + 1, g: undefined, h: undefined, f: undefined})
-        }
-        if(arr.y - 1 >= 0){
-            if((!contains(obstaculos,{x: arr.x + 1, y: arr.y}) || !contains(obstaculos,{x: arr.x, y: arr.y - 1})) || arr.y - 1 <= 0 || arr.x + 1 >= grid.width)
+            }
+            if(arr.y - 1 >= 0){
+                if((!contains(obstaculos,{x: arr.x + 1, y: arr.y}) || !contains(obstaculos,{x: arr.x, y: arr.y - 1})) || arr.y - 1 <= 0 || arr.x + 1 >= grid.width)
                 neighbor.push({x: arr.x + 1, y: arr.y - 1, g: undefined, h: undefined, f: undefined})
         }
     }
@@ -488,11 +440,11 @@ function getNeighbours(arr){
         neighbor.push({x: arr.x - 1, y: arr.y, g: undefined, h: undefined, f: undefined})
         if(arr.y + 1 < grid.height){
             if((!contains(obstaculos,{x: arr.x - 1, y: arr.y}) || !contains(obstaculos,{x: arr.x, y: arr.y + 1})) || arr.y + 1 >= grid.height || arr.x - 1 <= 0)
-                neighbor.push({x: arr.x - 1, y: arr.y + 1, g: undefined, h: undefined, f: undefined})
+            neighbor.push({x: arr.x - 1, y: arr.y + 1, g: undefined, h: undefined, f: undefined})
         }
         if(arr.y - 1 >= 0){
             if((!contains(obstaculos,{x: arr.x - 1, y: arr.y}) || !contains(obstaculos,{x: arr.x, y: arr.y - 1})) || arr.y - 1 <= 0 || arr.x - 1 <= 0)
-                neighbor.push({x: arr.x - 1, y: arr.y - 1, g: undefined, h: undefined, f: undefined})
+            neighbor.push({x: arr.x - 1, y: arr.y - 1, g: undefined, h: undefined, f: undefined})
         }
     }
     if(arr.y + 1 < grid.height){
@@ -609,3 +561,7 @@ copyStartBtn.onclick = e => {
 }
 
 button.onclick = startLoop
+
+document.body.oncontextmenu = e => {
+    e.preventDefault()
+}
